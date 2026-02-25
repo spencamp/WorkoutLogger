@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workout Logger</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>Workout Logger</h1>
+        <p class="subtext">Log workouts by voice or typing. Data stays on this device.</p>
+      </header>
+
+      <section class="card recorder-card">
+        <h2>Quick Log</h2>
+        <p>
+          Tap record and speak naturally, for example:
+          <em>"I did 10 squats and 1 minute dead hang."</em>
+        </p>
+
+        <div class="button-row">
+          <button id="recordButton" type="button">🎙️ Start Recording</button>
+          <button id="addTypedButton" type="button">➕ Add Typed Entry</button>
+        </div>
+
+        <label for="typedInput">Or type what you did:</label>
+        <textarea
+          id="typedInput"
+          placeholder="Example: did 20 push ups, 45 second plank"
+          rows="3"
+        ></textarea>
+
+        <div id="voiceSupportNotice" class="notice" hidden></div>
+        <p id="liveTranscript" class="live-transcript"></p>
+      </section>
+
+      <section class="card days-card">
+        <h2>History</h2>
+
+        <div class="view-toggle" role="tablist" aria-label="History views">
+          <button id="rawViewButton" class="toggle-tab active" type="button" role="tab">Raw Daily Log</button>
+          <button id="totalsViewButton" class="toggle-tab" type="button" role="tab">Totals</button>
+          <button id="trendsViewButton" class="toggle-tab" type="button" role="tab">Trends</button>
+        </div>
+
+        <div id="rawViewPanel" class="view-panel">
+          <h3>Workout Days</h3>
+          <div id="dayTabs" class="day-tabs" aria-label="Workout day list"></div>
+          <div id="entriesPanel" class="entries-panel">
+            <p class="empty-state">No logs yet. Add your first workout above.</p>
+          </div>
+        </div>
+
+        <div id="totalsViewPanel" class="view-panel" hidden>
+          <div class="totals-header">
+            <h3>Totals by Exercise</h3>
+            <label for="totalsRange">Show:</label>
+            <select id="totalsRange">
+              <option value="day">Today</option>
+              <option value="week">Rolling 7 Days</option>
+              <option value="month">This Month</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+          <div id="totalsPanel" class="entries-panel">
+            <p class="empty-state">No totals to show yet.</p>
+          </div>
+        </div>
+
+        <div id="trendsViewPanel" class="view-panel" hidden>
+          <h3>Trends</h3>
+          <div id="trendSummaryCards" class="summary-grid"></div>
+          <div class="trend-comparison">
+            <p id="trendTimeComparison"></p>
+            <p id="trendRepsComparison"></p>
+            <p id="trendStreak"></p>
+          </div>
+
+          <div class="charts-grid">
+            <section class="chart-card">
+              <h4>Last 14 Days: Time (minutes)</h4>
+              <div id="timeChart" class="mini-chart"></div>
+            </section>
+            <section class="chart-card">
+              <h4>Last 14 Days: Reps</h4>
+              <div id="repsChart" class="mini-chart"></div>
+            </section>
+          </div>
+
+          <div class="list-grid">
+            <section class="chart-card">
+              <h4>Most Active Days (Time)</h4>
+              <ul id="topTimeDays" class="simple-list"></ul>
+            </section>
+            <section class="chart-card">
+              <h4>Most Active Days (Reps)</h4>
+              <ul id="topRepDays" class="simple-list"></ul>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="entryRowTemplate">
+      <article class="entry-row">
+        <div class="entry-main">
+          <strong class="entry-title"></strong>
+          <p class="entry-meta"></p>
+        </div>
+        <div class="entry-actions">
+          <button class="edit-button" type="button">Edit</button>
+          <button class="delete-button danger" type="button">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <template id="totalRowTemplate">
+      <article class="entry-row">
+        <div class="entry-main">
+          <strong class="entry-title"></strong>
+          <p class="entry-meta"></p>
+        </div>
+      </article>
+    </template>
+
+    <dialog id="editDialog">
+      <form method="dialog" id="editForm">
+        <h3>Edit Entry</h3>
+
+        <label>
+          Activity
+          <input id="editActivity" required />
+        </label>
+
+        <label>
+          Amount
+          <input id="editAmount" type="number" min="0" step="any" required />
+        </label>
+
+        <label>
+          Unit
+          <select id="editUnit">
+            <option value="reps">reps</option>
+            <option value="seconds">seconds</option>
+            <option value="minutes">minutes</option>
+            <option value="hours">hours</option>
+          </select>
+        </label>
+
+        <menu>
+          <button type="button" id="cancelEdit">Cancel</button>
+          <button type="submit" id="saveEdit">Save</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="workout-catalog.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
