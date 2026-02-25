@@ -17,6 +17,7 @@ A beginner-friendly web app that lets you log workouts with voice or typing.
   - last 14-day charts (time and reps),
   - most active days lists (time and reps),
   - current streak.
+- Group workouts by day with tappable day tabs.
 - Edit or delete entries.
 - Typed logging works offline.
 
@@ -65,6 +66,8 @@ Then open:
 4. Open **Totals** for totals by exercise over your selected range.
 5. Open **Trends** to check consistency and progress at a glance.
 6. Use **Edit** or **Delete** for corrections.
+3. Open the day tab to review entries.
+4. Use **Edit** or **Delete** for corrections.
 
 ## Suggested next upgrades
 
@@ -93,17 +96,3 @@ Example:
 ```
 
 Hyphenated and non-hyphenated names are treated as the same activity automatically (for example `pull ups` and `pull-ups`).
-
-
-## Netlify deploy troubleshooting (buttons tap but do nothing)
-
-If the UI appears but buttons do nothing, the browser is usually running stale JavaScript or missing one of the JS files.
-
-1. Confirm these files are in your Netlify publish output:
-   - `index.html`
-   - `app.js`
-   - `workout-catalog.js`
-   - `styles.css`
-2. In browser dev tools, open **Network** and make sure `app.js` and `workout-catalog.js` both return `200`.
-3. Hard refresh the site on desktop and iPhone.
-4. This repo includes a Netlify `_headers` file to reduce stale cache issues after redeploys.
