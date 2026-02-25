@@ -1,3 +1,9 @@
+(function () {
+  if (window.__workoutLoggerInitialized) {
+    return;
+  }
+  window.__workoutLoggerInitialized = true;
+
 const STORAGE_KEY = "workout-logger.entries.v1";
 
 const recordButton = document.getElementById("recordButton");
@@ -854,3 +860,5 @@ function loadEntries() {
 function saveEntries(nextEntries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextEntries));
 }
+
+})();

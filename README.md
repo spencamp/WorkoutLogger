@@ -96,3 +96,17 @@ Example:
 ```
 
 Hyphenated and non-hyphenated names are treated as the same activity automatically (for example `pull ups` and `pull-ups`).
+
+
+## Netlify deploy troubleshooting (buttons tap but do nothing)
+
+If the UI appears but buttons do nothing, the browser is usually running stale JavaScript or missing one of the JS files.
+
+1. Confirm these files are in your Netlify publish output:
+   - `index.html`
+   - `app.js`
+   - `workout-catalog.js`
+   - `styles.css`
+2. In browser dev tools, open **Network** and make sure `app.js` and `workout-catalog.js` both return `200`.
+3. Hard refresh the site on desktop and iPhone.
+4. This repo includes a Netlify `_headers` file to reduce stale cache issues after redeploys.
