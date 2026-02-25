@@ -6,6 +6,7 @@ A beginner-friendly web app that lets you log workouts with voice or typing.
 
 - Press a button and talk naturally (when browser supports speech recognition).
 - Parse multiple entries from one phrase (`"10 squats and 1 minute dead hang"`).
+- Handle more natural phrasing like hyphenated time (`"60-second couch stretch"`) and normalize common aliases (`"dead-hang"` -> `dead hang`).
 - Keep all logs in `localStorage` (on-device).
 - View a **Raw Daily Log** by day tabs.
 - View a **Totals** tab grouped by exercise + unit.

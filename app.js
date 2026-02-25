@@ -245,6 +245,91 @@ function parseWorkoutText(text) {
   return parsed;
 }
 
+function replaceNumberWords(text) {
+  const wordToNumber = {
+    zero: "0",
+    one: "1",
+    two: "2",
+    three: "3",
+    four: "4",
+    five: "5",
+    six: "6",
+    seven: "7",
+    eight: "8",
+    nine: "9",
+    ten: "10",
+    eleven: "11",
+    twelve: "12",
+    thirteen: "13",
+    fourteen: "14",
+    fifteen: "15",
+    sixteen: "16",
+    seventeen: "17",
+    eighteen: "18",
+    nineteen: "19",
+    twenty: "20",
+    thirty: "30",
+    forty: "40",
+    fifty: "50",
+    sixty: "60",
+  };
+
+  let output = text;
+  for (const [word, number] of Object.entries(wordToNumber)) {
+    const regex = new RegExp(`\\b${word}\\b`, "gi");
+    output = output.replace(regex, number);
+  }
+
+  return output;
+}
+
+function canonicalizeActivity(activity) {
+  const cleaned = normalizeActivityKey(activity);
+  if (!cleaned) {
+    return "";
+  }
+
+  return activityAliasMap.get(cleaned) || cleaned;
+}
+
+function buildActivityAliasMap(catalog) {
+  const map = new Map();
+
+  for (const item of catalog) {
+    if (!item || !item.name) {
+      continue;
+    }
+
+    const canonical = normalizeActivityKey(item.name);
+    if (!canonical) {
+      continue;
+    }
+
+    map.set(canonical, canonical);
+
+    if (Array.isArray(item.aliases)) {
+      for (const alias of item.aliases) {
+        const normalizedAlias = normalizeActivityKey(alias);
+        if (normalizedAlias) {
+          map.set(normalizedAlias, canonical);
+        }
+      }
+    }
+  }
+
+  return map;
+}
+
+function normalizeActivityKey(value) {
+  return value
+    .toLowerCase()
+    .replace(/\bfor\b/g, "")
+    .replace(/[^a-z0-9\s-]/gi, " ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeUnit(unit) {
   if (unit.startsWith("minute")) {
     return "minutes";
@@ -261,6 +346,7 @@ function normalizeUnit(unit) {
 function addParsedEntries(parsedEntries) {
   const entriesToAdd = parsedEntries.map((entry) => ({
     ...entry,
+    id: createEntryId(),
     id: crypto.randomUUID(),
   }));
 
