@@ -348,8 +348,9 @@ function renderTotals() {
   }
 
   for (const total of totals) {
+    const displayTotal = formatDisplayTotal(total.amount, total.unit);
     const row = totalRowTemplate.content.firstElementChild.cloneNode(true);
-    row.querySelector(".entry-title").textContent = `${formatTotalAmount(total.amount, total.unit)} ${total.unit} ${total.activity}`;
+    row.querySelector(".entry-title").textContent = `${displayTotal.amount} ${displayTotal.unit} ${total.activity}`;
     row.querySelector(".entry-meta").textContent = "";
     totalsPanel.appendChild(row);
   }
@@ -371,9 +372,17 @@ function renderTrends() {
     trendSummaryCards.innerHTML = '<p class="empty-state">No movement logged today yet.</p>';
   } else {
     for (const item of todayExerciseTotals.slice(0, 6)) {
+      const displayTotal = formatDisplayTotal(item.amount, item.unit);
       const card = document.createElement("article");
       card.className = "summary-card";
-      card.innerHTML = `<p>${item.activity}</p><strong>${item.displayAmount} ${item.unit}</strong>`;
+
+      const activityText = document.createElement("p");
+      activityText.textContent = item.activity;
+
+      const totalText = document.createElement("strong");
+      totalText.textContent = `${displayTotal.amount} ${displayTotal.unit}`;
+
+      card.append(activityText, totalText);
       trendSummaryCards.appendChild(card);
     }
   }
@@ -414,10 +423,6 @@ function summarizeTodayPerExercise(allEntries, day) {
   }
 
   return [...map.values()]
-    .map((item) => ({
-      ...item,
-      displayAmount: formatTotalAmount(item.amount, item.unit),
-    }))
     .sort((a, b) => b.amount - a.amount);
 }
 
@@ -458,7 +463,7 @@ function getLastNDays(count, offsetDays = 0) {
   for (let i = count - 1; i >= 0; i -= 1) {
     const day = new Date(end);
     day.setDate(end.getDate() - i);
-    days.push(day.toISOString().slice(0, 10));
+    days.push(localDateKey(day));
   }
   return days;
 }
@@ -514,7 +519,7 @@ function calculateStreak(allEntries) {
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
 
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(localDateKey(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -547,7 +552,7 @@ function isInSelectedRange(timestamp, range) {
   const now = new Date();
 
   if (range === "day") {
-    return dayKey(date.toISOString()) === dayKey(now.toISOString());
+    return dayKey(date) === dayKey(now);
   }
 
   if (range === "week") {
@@ -578,11 +583,17 @@ function toMinutes(amount, unit) {
   return amount;
 }
 
-function formatTotalAmount(amount, unit) {
+function formatDisplayTotal(amount, unit) {
   if (isTimeUnit(unit)) {
-    return formatOneDecimal(toMinutes(amount, unit));
+    return {
+      amount: formatOneDecimal(toMinutes(amount, unit)),
+      unit: "minutes",
+    };
   }
-  return trimNumber(amount);
+  return {
+    amount: trimNumber(amount),
+    unit,
+  };
 }
 
 function formatOneDecimal(value) {
@@ -602,15 +613,27 @@ function openEditDialog(entry) {
 }
 
 function dayKey(timestamp) {
-  return new Date(timestamp).toISOString().slice(0, 10);
+  return localDateKey(new Date(timestamp));
 }
 
 function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey(new Date());
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDayKey(day) {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year, month - 1, date);
 }
 
 function formatDay(day) {
-  return new Date(day).toLocaleDateString([], {
+  return parseDayKey(day).toLocaleDateString([], {
     weekday: "short",
     month: "short",
     day: "numeric",
