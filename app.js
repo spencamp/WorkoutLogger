@@ -41,6 +41,9 @@ let editingEntryId = null;
 let recognition = null;
 let isRecording = false;
 
+const workoutCatalog = Array.isArray(window.WORKOUT_CATALOG) ? window.WORKOUT_CATALOG : [];
+const activityAliasMap = buildActivityAliasMap(workoutCatalog);
+
 initializeVoiceRecognition();
 render();
 
@@ -686,6 +689,15 @@ function formatTrend(current, previous, suffix) {
 
 
 function createEntryId() {
+  const cryptoObj = window.crypto;
+
+  if (cryptoObj && typeof cryptoObj.randomUUID === "function") {
+    return cryptoObj.randomUUID();
+  }
+
+  if (cryptoObj && typeof cryptoObj.getRandomValues === "function") {
+    const randomBytes = new Uint32Array(2);
+    cryptoObj.getRandomValues(randomBytes);
   if (globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID();
   }

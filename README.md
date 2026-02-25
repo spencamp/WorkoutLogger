@@ -75,3 +75,24 @@ Then open:
 - Add cloud sync (Supabase/Firebase)
 - Add custom activity presets
 - Add PWA install support
+
+## Master workout/stretch catalog
+
+Edit `workout-catalog.js` to maintain your master list of workouts and stretches.
+
+Each item has:
+- `name`: canonical exercise/stretch name
+- `type`: `exercise` or `stretch`
+- `aliases`: alternate phrases you might speak/type
+
+Example:
+
+```js
+{
+  name: "pull ups",
+  type: "exercise",
+  aliases: ["pull-ups", "pullup", "pull-ups"]
+}
+```
+
+Hyphenated and non-hyphenated names are treated as the same activity automatically (for example `pull ups` and `pull-ups`).
