@@ -172,6 +172,11 @@ function initializeVoiceRecognition() {
 }
 
 function parseWorkoutText(text) {
+  const normalized = replaceNumberWords(text)
+    .toLowerCase()
+    .replace(/\band\b/g, ",")
+    .replace(/\bi did\b/g, "")
+    .replace(/[–—]/g, "-")
   const normalized = text
     .toLowerCase()
     .replace(/\band\b/g, ",")
@@ -186,6 +191,31 @@ function parseWorkoutText(text) {
   const parsed = [];
 
   for (const chunk of chunks) {
+    const amountFirst = chunk.match(/(\d+(?:\.\d+)?)\s*[- ]?\s*(minute|minutes|second|seconds|hour|hours|rep|reps)?\s+(.+)/);
+    const activityFirst = chunk.match(/(.+?)\s+for\s+(\d+(?:\.\d+)?)\s*[- ]?\s*(minute|minutes|second|seconds|hour|hours|rep|reps)?/);
+
+    let amount = null;
+    let rawUnit = "reps";
+    let activity = "";
+
+    if (amountFirst) {
+      amount = Number(amountFirst[1]);
+      rawUnit = amountFirst[2] || "reps";
+      activity = amountFirst[3];
+    } else if (activityFirst) {
+      amount = Number(activityFirst[2]);
+      rawUnit = activityFirst[3] || "reps";
+      activity = activityFirst[1];
+    } else {
+      continue;
+    }
+
+    if (!Number.isFinite(amount)) {
+      continue;
+    }
+
+    const canonicalActivity = canonicalizeActivity(activity);
+    if (!canonicalActivity) {
     const match = chunk.match(/(\d+(?:\.\d+)?)\s*(minute|minutes|second|seconds|hour|hours|rep|reps)?\s+(.+)/);
 
     if (!match) {
@@ -204,6 +234,7 @@ function parseWorkoutText(text) {
     }
 
     parsed.push({
+      activity: canonicalActivity,
       activity,
       amount,
       unit: normalizeUnit(rawUnit),
@@ -328,6 +359,17 @@ function renderTotals() {
   const totalsMap = new Map();
 
   for (const entry of filtered) {
+    const normalized = normalizeForAggregation(Number(entry.amount), entry.unit);
+    const key = `${entry.activity.toLowerCase()}|${normalized.unit}`;
+    const existing = totalsMap.get(key);
+
+    if (existing) {
+      existing.amount += normalized.amount;
+    } else {
+      totalsMap.set(key, {
+        activity: entry.activity,
+        unit: normalized.unit,
+        amount: normalized.amount,
     const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
     const existing = totalsMap.get(key);
 
@@ -412,6 +454,16 @@ function summarizeTodayPerExercise(allEntries, day) {
     if (dayKey(entry.timestamp) !== day) {
       continue;
     }
+    const normalized = normalizeForAggregation(Number(entry.amount), entry.unit);
+    const key = `${entry.activity.toLowerCase()}|${normalized.unit}`;
+    const current = map.get(key);
+    if (current) {
+      current.amount += normalized.amount;
+    } else {
+      map.set(key, {
+        activity: entry.activity,
+        unit: normalized.unit,
+        amount: normalized.amount,
     const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
     const current = map.get(key);
     if (current) {
@@ -544,6 +596,35 @@ function formatTrend(current, previous, suffix) {
   const arrow = delta > 0 ? "⬆️" : delta < 0 ? "⬇️" : "➖";
   const amount = suffix === "minutes" ? formatOneDecimal(current) : trimNumber(current);
   return `${arrow} ${delta === 0 ? "flat" : `${pct > 0 ? "+" : ""}${formatOneDecimal(pct)}%`} (${amount} ${suffix} this 7d)`;
+}
+
+
+function createEntryId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  if (globalThis.crypto?.getRandomValues) {
+    const randomBytes = new Uint32Array(2);
+    globalThis.crypto.getRandomValues(randomBytes);
+    return `fallback-${Date.now().toString(36)}-${randomBytes[0].toString(36)}${randomBytes[1].toString(36)}`;
+  }
+
+  return `fallback-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeForAggregation(amount, unit) {
+  if (isTimeUnit(unit)) {
+    return {
+      amount: toMinutes(amount, unit),
+      unit: "minutes",
+    };
+  }
+
+  return {
+    amount,
+    unit,
+  };
 }
 
 function isInSelectedRange(timestamp, range) {
