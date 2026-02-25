@@ -58,4 +58,5 @@ window.WORKOUT_CATALOG = [
     name: "cat cow",
     type: "stretch",
     aliases: ["catcow", "cat-cow"]
+  },
 ];
