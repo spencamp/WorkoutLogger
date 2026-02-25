@@ -17,6 +17,7 @@
         <h2>Quick Log</h2>
         <p>
           Tap record and speak naturally, for example:
+          <em>"I did 10 squats and 1 minute dead hang."</em>
           <em>"I did 10 squats and a one minute dead hang."</em>
         </p>
 
@@ -37,6 +38,68 @@
       </section>
 
       <section class="card days-card">
+        <h2>History</h2>
+
+        <div class="view-toggle" role="tablist" aria-label="History views">
+          <button id="rawViewButton" class="toggle-tab active" type="button" role="tab">Raw Daily Log</button>
+          <button id="totalsViewButton" class="toggle-tab" type="button" role="tab">Totals</button>
+          <button id="trendsViewButton" class="toggle-tab" type="button" role="tab">Trends</button>
+        </div>
+
+        <div id="rawViewPanel" class="view-panel">
+          <h3>Workout Days</h3>
+          <div id="dayTabs" class="day-tabs" aria-label="Workout day list"></div>
+          <div id="entriesPanel" class="entries-panel">
+            <p class="empty-state">No logs yet. Add your first workout above.</p>
+          </div>
+        </div>
+
+        <div id="totalsViewPanel" class="view-panel" hidden>
+          <div class="totals-header">
+            <h3>Totals by Exercise</h3>
+            <label for="totalsRange">Show:</label>
+            <select id="totalsRange">
+              <option value="day">Today</option>
+              <option value="week">Rolling 7 Days</option>
+              <option value="month">This Month</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+          <div id="totalsPanel" class="entries-panel">
+            <p class="empty-state">No totals to show yet.</p>
+          </div>
+        </div>
+
+        <div id="trendsViewPanel" class="view-panel" hidden>
+          <h3>Trends</h3>
+          <div id="trendSummaryCards" class="summary-grid"></div>
+          <div class="trend-comparison">
+            <p id="trendTimeComparison"></p>
+            <p id="trendRepsComparison"></p>
+            <p id="trendStreak"></p>
+          </div>
+
+          <div class="charts-grid">
+            <section class="chart-card">
+              <h4>Last 14 Days: Time (minutes)</h4>
+              <div id="timeChart" class="mini-chart"></div>
+            </section>
+            <section class="chart-card">
+              <h4>Last 14 Days: Reps</h4>
+              <div id="repsChart" class="mini-chart"></div>
+            </section>
+          </div>
+
+          <div class="list-grid">
+            <section class="chart-card">
+              <h4>Most Active Days (Time)</h4>
+              <ul id="topTimeDays" class="simple-list"></ul>
+            </section>
+            <section class="chart-card">
+              <h4>Most Active Days (Reps)</h4>
+              <ul id="topRepDays" class="simple-list"></ul>
+            </section>
+          </div>
         <h2>Workout Days</h2>
         <div id="dayTabs" class="day-tabs" aria-label="Workout day list"></div>
         <div id="entriesPanel" class="entries-panel">
@@ -54,6 +117,15 @@
         <div class="entry-actions">
           <button class="edit-button" type="button">Edit</button>
           <button class="delete-button danger" type="button">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <template id="totalRowTemplate">
+      <article class="entry-row">
+        <div class="entry-main">
+          <strong class="entry-title"></strong>
+          <p class="entry-meta"></p>
         </div>
       </article>
     </template>

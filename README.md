@@ -7,6 +7,15 @@ A beginner-friendly web app that lets you log workouts with voice or typing.
 - Press a button and talk naturally (when browser supports speech recognition).
 - Parse multiple entries from one phrase (`"10 squats and 1 minute dead hang"`).
 - Keep all logs in `localStorage` (on-device).
+- View a **Raw Daily Log** by day tabs.
+- View a **Totals** tab grouped by exercise + unit.
+- Filter totals by **Today**, **Rolling 7 Days**, **This Month**, or **All Time**.
+- View a **Trends** tab with:
+  - today's per-exercise totals,
+  - rolling 7-day vs previous 7-day trends (time + reps),
+  - last 14-day charts (time and reps),
+  - most active days lists (time and reps),
+  - current streak.
 - Group workouts by day with tappable day tabs.
 - Edit or delete entries.
 - Typed logging works offline.
@@ -22,6 +31,13 @@ If this repository is already on your computer, open it in VS Code.
 ### 3) Run a local web server
 Because microphone features need a real browser context, run a local server instead of opening the file directly.
 
+#### Option A (no Python install): VS Code Live Server
+1. In VS Code, go to **Extensions**.
+2. Install **Live Server** (by Ritwick Dey).
+3. Open `index.html`.
+4. Click **Go Live** (bottom-right in VS Code).
+
+#### Option B (Python)
 In terminal, inside this folder:
 
 ```bash
@@ -45,6 +61,10 @@ Then open:
 1. Tap **Start Recording**, then say something like:
    - `I did 10 squats and 1 minute dead hang`
 2. Or type the same sentence and press **Add Typed Entry**.
+3. Open **Raw Daily Log** to review exact entries by day.
+4. Open **Totals** for totals by exercise over your selected range.
+5. Open **Trends** to check consistency and progress at a glance.
+6. Use **Edit** or **Delete** for corrections.
 3. Open the day tab to review entries.
 4. Use **Edit** or **Delete** for corrections.
 

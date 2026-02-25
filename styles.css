@@ -5,6 +5,7 @@
   --muted: #94a3b8;
   --accent: #38bdf8;
   --danger: #f87171;
+  --bar: #7dd3fc;
 }
 
 * {
@@ -27,6 +28,8 @@ body {
 
 h1,
 h2,
+h3,
+h4 {
 h3 {
   margin-top: 0;
 }
@@ -93,6 +96,23 @@ select {
   min-height: 1.2rem;
 }
 
+.view-toggle {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toggle-tab {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.toggle-tab.active {
+  background: var(--accent);
+  color: #082f49;
+}
+
 .day-tabs {
   display: flex;
   gap: 0.5rem;
@@ -109,6 +129,99 @@ select {
 .day-tab.active {
   background: var(--accent);
   color: #082f49;
+}
+
+.totals-header {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.summary-card {
+  border: 1px solid #475569;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #0b1222;
+}
+
+.summary-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.2rem;
+}
+
+.trend-comparison {
+  margin-bottom: 1rem;
+}
+
+.trend-comparison p {
+  margin: 0.3rem 0;
+}
+
+.charts-grid,
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.chart-card {
+  border: 1px solid #475569;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #0b1222;
+}
+
+.mini-chart {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(8px, 1fr));
+  gap: 0.25rem;
+  align-items: end;
+  min-height: 120px;
+  margin-top: 0.5rem;
+}
+
+.chart-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+}
+
+.chart-bar {
+  width: 100%;
+  background: var(--bar);
+  border-radius: 3px 3px 0 0;
+  min-height: 3px;
+}
+
+.chart-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+
+.simple-list {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--text);
+}
+
+.simple-list li {
+  margin-bottom: 0.35rem;
 }
 
 .entries-panel {

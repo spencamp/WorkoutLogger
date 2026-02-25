@@ -5,6 +5,24 @@ const addTypedButton = document.getElementById("addTypedButton");
 const typedInput = document.getElementById("typedInput");
 const dayTabs = document.getElementById("dayTabs");
 const entriesPanel = document.getElementById("entriesPanel");
+const totalsPanel = document.getElementById("totalsPanel");
+const totalsRange = document.getElementById("totalsRange");
+const rawViewButton = document.getElementById("rawViewButton");
+const totalsViewButton = document.getElementById("totalsViewButton");
+const trendsViewButton = document.getElementById("trendsViewButton");
+const rawViewPanel = document.getElementById("rawViewPanel");
+const totalsViewPanel = document.getElementById("totalsViewPanel");
+const trendsViewPanel = document.getElementById("trendsViewPanel");
+const trendSummaryCards = document.getElementById("trendSummaryCards");
+const trendTimeComparison = document.getElementById("trendTimeComparison");
+const trendRepsComparison = document.getElementById("trendRepsComparison");
+const trendStreak = document.getElementById("trendStreak");
+const timeChart = document.getElementById("timeChart");
+const repsChart = document.getElementById("repsChart");
+const topTimeDays = document.getElementById("topTimeDays");
+const topRepDays = document.getElementById("topRepDays");
+const entryRowTemplate = document.getElementById("entryRowTemplate");
+const totalRowTemplate = document.getElementById("totalRowTemplate");
 const entryRowTemplate = document.getElementById("entryRowTemplate");
 const liveTranscript = document.getElementById("liveTranscript");
 const voiceSupportNotice = document.getElementById("voiceSupportNotice");
@@ -18,6 +36,7 @@ const cancelEdit = document.getElementById("cancelEdit");
 
 let entries = loadEntries();
 let selectedDay = getTodayKey();
+let selectedView = "raw";
 let editingEntryId = null;
 let recognition = null;
 let isRecording = false;
@@ -55,6 +74,25 @@ addTypedButton.addEventListener("click", () => {
   addParsedEntries(parsedEntries);
   typedInput.value = "";
   liveTranscript.textContent = `Added ${parsedEntries.length} entr${parsedEntries.length === 1 ? "y" : "ies"}.`;
+});
+
+rawViewButton.addEventListener("click", () => {
+  selectedView = "raw";
+  render();
+});
+
+totalsViewButton.addEventListener("click", () => {
+  selectedView = "totals";
+  render();
+});
+
+trendsViewButton.addEventListener("click", () => {
+  selectedView = "trends";
+  render();
+});
+
+totalsRange.addEventListener("change", () => {
+  renderTotals();
 });
 
 cancelEdit.addEventListener("click", () => {
@@ -202,6 +240,23 @@ function addParsedEntries(parsedEntries) {
 }
 
 function render() {
+  renderViewToggle();
+  renderDayTabs();
+  renderEntriesForSelectedDay();
+  renderTotals();
+  renderTrends();
+}
+
+function renderViewToggle() {
+  const showingRaw = selectedView === "raw";
+  const showingTotals = selectedView === "totals";
+  const showingTrends = selectedView === "trends";
+  rawViewButton.classList.toggle("active", showingRaw);
+  totalsViewButton.classList.toggle("active", showingTotals);
+  trendsViewButton.classList.toggle("active", showingTrends);
+  rawViewPanel.hidden = !showingRaw;
+  totalsViewPanel.hidden = !showingTotals;
+  trendsViewPanel.hidden = !showingTrends;
   renderDayTabs();
   renderEntriesForSelectedDay();
 }
@@ -267,6 +322,291 @@ function renderEntriesForSelectedDay() {
   }
 }
 
+function renderTotals() {
+  const range = totalsRange.value;
+  const filtered = entries.filter((entry) => isInSelectedRange(entry.timestamp, range));
+  const totalsMap = new Map();
+
+  for (const entry of filtered) {
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const existing = totalsMap.get(key);
+
+    if (existing) {
+      existing.amount += Number(entry.amount);
+    } else {
+      totalsMap.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
+      });
+    }
+  }
+
+  const totals = [...totalsMap.values()].sort((a, b) => b.amount - a.amount);
+  totalsPanel.innerHTML = "";
+
+  if (!totals.length) {
+    totalsPanel.innerHTML = '<p class="empty-state">No totals in this range yet.</p>';
+    return;
+  }
+
+  for (const total of totals) {
+    const displayTotal = formatDisplayTotal(total.amount, total.unit);
+    const row = totalRowTemplate.content.firstElementChild.cloneNode(true);
+    row.querySelector(".entry-title").textContent = `${displayTotal.amount} ${displayTotal.unit} ${total.activity}`;
+    row.querySelector(".entry-meta").textContent = "";
+    totalsPanel.appendChild(row);
+  }
+}
+
+function renderTrends() {
+  const last14 = getLastNDays(14);
+  const byDay = buildDailyMetrics(entries);
+  const today = dayKey(new Date().toISOString());
+  const todayMetrics = byDay.get(today) || { minutes: 0, reps: 0 };
+
+  const weekly = getRollingRangeTotals(byDay, 7, 0);
+  const previousWeekly = getRollingRangeTotals(byDay, 7, 7);
+
+  trendSummaryCards.innerHTML = "";
+  const todayExerciseTotals = summarizeTodayPerExercise(entries, today);
+
+  if (!todayExerciseTotals.length) {
+    trendSummaryCards.innerHTML = '<p class="empty-state">No movement logged today yet.</p>';
+  } else {
+    for (const item of todayExerciseTotals.slice(0, 6)) {
+      const displayTotal = formatDisplayTotal(item.amount, item.unit);
+      const card = document.createElement("article");
+      card.className = "summary-card";
+
+      const activityText = document.createElement("p");
+      activityText.textContent = item.activity;
+
+      const totalText = document.createElement("strong");
+      totalText.textContent = `${displayTotal.amount} ${displayTotal.unit}`;
+
+      card.append(activityText, totalText);
+      trendSummaryCards.appendChild(card);
+    }
+  }
+
+  trendTimeComparison.textContent = `Time trend (rolling 7d): ${formatTrend(weekly.minutes, previousWeekly.minutes, "minutes")}`;
+  trendRepsComparison.textContent = `Reps trend (rolling 7d): ${formatTrend(weekly.reps, previousWeekly.reps, "reps")}`;
+  trendStreak.textContent = `Current streak: ${calculateStreak(entries)} day${calculateStreak(entries) === 1 ? "" : "s"}`;
+
+  drawChart(timeChart, last14, byDay, "minutes");
+  drawChart(repsChart, last14, byDay, "reps");
+  renderTopDays(topTimeDays, byDay, "minutes");
+  renderTopDays(topRepDays, byDay, "reps");
+
+  if (!todayExerciseTotals.length && todayMetrics.minutes === 0 && todayMetrics.reps === 0 && entries.length === 0) {
+    trendTimeComparison.textContent = "Time trend (rolling 7d): no data yet.";
+    trendRepsComparison.textContent = "Reps trend (rolling 7d): no data yet.";
+    trendStreak.textContent = "Current streak: 0 days";
+  }
+}
+
+function summarizeTodayPerExercise(allEntries, day) {
+  const map = new Map();
+  for (const entry of allEntries) {
+    if (dayKey(entry.timestamp) !== day) {
+      continue;
+    }
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const current = map.get(key);
+    if (current) {
+      current.amount += Number(entry.amount);
+    } else {
+      map.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
+      });
+    }
+  }
+
+  return [...map.values()]
+    .sort((a, b) => b.amount - a.amount);
+}
+
+function buildDailyMetrics(allEntries) {
+  const map = new Map();
+  for (const entry of allEntries) {
+    const day = dayKey(entry.timestamp);
+    const current = map.get(day) || { minutes: 0, reps: 0 };
+    if (isTimeUnit(entry.unit)) {
+      current.minutes += toMinutes(Number(entry.amount), entry.unit);
+    } else {
+      current.reps += Number(entry.amount);
+    }
+    map.set(day, current);
+  }
+  return map;
+}
+
+function getRollingRangeTotals(byDay, count, offsetDays) {
+  const dates = getLastNDays(count, offsetDays);
+  return dates.reduce(
+    (sum, day) => {
+      const metrics = byDay.get(day) || { minutes: 0, reps: 0 };
+      sum.minutes += metrics.minutes;
+      sum.reps += metrics.reps;
+      return sum;
+    },
+    { minutes: 0, reps: 0 },
+  );
+}
+
+function getLastNDays(count, offsetDays = 0) {
+  const days = [];
+  const end = new Date();
+  end.setHours(0, 0, 0, 0);
+  end.setDate(end.getDate() - offsetDays);
+
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const day = new Date(end);
+    day.setDate(end.getDate() - i);
+    days.push(localDateKey(day));
+  }
+  return days;
+}
+
+function drawChart(target, days, byDay, metric) {
+  target.innerHTML = "";
+  const values = days.map((day) => (byDay.get(day) || { minutes: 0, reps: 0 })[metric]);
+  const maxValue = Math.max(...values, 0);
+
+  for (let i = 0; i < days.length; i += 1) {
+    const value = values[i];
+    const wrap = document.createElement("div");
+    wrap.className = "chart-bar-wrap";
+
+    const bar = document.createElement("div");
+    bar.className = "chart-bar";
+    const heightPct = maxValue === 0 ? 2 : Math.max((value / maxValue) * 100, 2);
+    bar.style.height = `${heightPct}%`;
+    bar.title = `${formatDay(days[i])}: ${metric === "minutes" ? formatOneDecimal(value) + " min" : trimNumber(value) + " reps"}`;
+
+    const label = document.createElement("span");
+    label.className = "chart-label";
+    label.textContent = days[i].slice(8, 10);
+
+    wrap.append(bar, label);
+    target.appendChild(wrap);
+  }
+}
+
+function renderTopDays(target, byDay, metric) {
+  target.innerHTML = "";
+  const rows = [...byDay.entries()]
+    .map(([day, values]) => ({ day, value: values[metric] }))
+    .filter((row) => row.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  if (!rows.length) {
+    target.innerHTML = '<li class="empty-state">No data yet.</li>';
+    return;
+  }
+
+  for (const row of rows) {
+    const li = document.createElement("li");
+    li.textContent = `${formatDay(row.day)} — ${metric === "minutes" ? formatOneDecimal(row.value) + " min" : trimNumber(row.value) + " reps"}`;
+    target.appendChild(li);
+  }
+}
+
+function calculateStreak(allEntries) {
+  const days = new Set(allEntries.map((entry) => dayKey(entry.timestamp)));
+  let streak = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+
+  while (days.has(localDateKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
+
+function formatTrend(current, previous, suffix) {
+  if (current === 0 && previous === 0) {
+    return "no data yet";
+  }
+
+  if (previous === 0) {
+    return `⬆️ up from 0 to ${suffix === "minutes" ? formatOneDecimal(current) : trimNumber(current)} ${suffix}`;
+  }
+
+  const delta = current - previous;
+  const pct = (delta / previous) * 100;
+  const arrow = delta > 0 ? "⬆️" : delta < 0 ? "⬇️" : "➖";
+  const amount = suffix === "minutes" ? formatOneDecimal(current) : trimNumber(current);
+  return `${arrow} ${delta === 0 ? "flat" : `${pct > 0 ? "+" : ""}${formatOneDecimal(pct)}%`} (${amount} ${suffix} this 7d)`;
+}
+
+function isInSelectedRange(timestamp, range) {
+  if (range === "all") {
+    return true;
+  }
+
+  const date = new Date(timestamp);
+  const now = new Date();
+
+  if (range === "day") {
+    return dayKey(date) === dayKey(now);
+  }
+
+  if (range === "week") {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 6);
+    return date >= start && date <= now;
+  }
+
+  if (range === "month") {
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }
+
+  return true;
+}
+
+function isTimeUnit(unit) {
+  return unit === "seconds" || unit === "minutes" || unit === "hours";
+}
+
+function toMinutes(amount, unit) {
+  if (unit === "seconds") {
+    return amount / 60;
+  }
+  if (unit === "hours") {
+    return amount * 60;
+  }
+  return amount;
+}
+
+function formatDisplayTotal(amount, unit) {
+  if (isTimeUnit(unit)) {
+    return {
+      amount: formatOneDecimal(toMinutes(amount, unit)),
+      unit: "minutes",
+    };
+  }
+  return {
+    amount: trimNumber(amount),
+    unit,
+  };
+}
+
+function formatOneDecimal(value) {
+  return (Math.round(value * 10) / 10).toFixed(1);
+}
+
+function trimNumber(value) {
+  return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
+}
+
 function openEditDialog(entry) {
   editingEntryId = entry.id;
   editActivity.value = entry.activity;
@@ -276,6 +616,29 @@ function openEditDialog(entry) {
 }
 
 function dayKey(timestamp) {
+  return localDateKey(new Date(timestamp));
+}
+
+function getTodayKey() {
+  return localDateKey(new Date());
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDayKey(day) {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year, month - 1, date);
+}
+
+function formatDay(day) {
+  return parseDayKey(day).toLocaleDateString([], {
+    weekday: "short",
+    month: "short",
   return new Date(timestamp).toISOString().slice(0, 10);
 }
 
