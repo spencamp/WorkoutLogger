@@ -4,50 +4,51 @@
   }
   window.__workoutLoggerInitialized = true;
 
-var STORAGE_KEY = "workout-logger.entries.v1";
+const STORAGE_KEY = "workout-logger.entries.v1";
 
-var recordButton = document.getElementById("recordButton");
-var addTypedButton = document.getElementById("addTypedButton");
-var typedInput = document.getElementById("typedInput");
-var dayTabs = document.getElementById("dayTabs");
-var entriesPanel = document.getElementById("entriesPanel");
-var totalsPanel = document.getElementById("totalsPanel");
-var totalsRange = document.getElementById("totalsRange");
-var rawViewButton = document.getElementById("rawViewButton");
-var totalsViewButton = document.getElementById("totalsViewButton");
-var trendsViewButton = document.getElementById("trendsViewButton");
-var rawViewPanel = document.getElementById("rawViewPanel");
-var totalsViewPanel = document.getElementById("totalsViewPanel");
-var trendsViewPanel = document.getElementById("trendsViewPanel");
-var trendSummaryCards = document.getElementById("trendSummaryCards");
-var trendTimeComparison = document.getElementById("trendTimeComparison");
-var trendRepsComparison = document.getElementById("trendRepsComparison");
-var trendStreak = document.getElementById("trendStreak");
-var timeChart = document.getElementById("timeChart");
-var repsChart = document.getElementById("repsChart");
-var topTimeDays = document.getElementById("topTimeDays");
-var topRepDays = document.getElementById("topRepDays");
-var entryRowTemplate = document.getElementById("entryRowTemplate");
-var totalRowTemplate = document.getElementById("totalRowTemplate");
-var liveTranscript = document.getElementById("liveTranscript");
-var voiceSupportNotice = document.getElementById("voiceSupportNotice");
+const recordButton = document.getElementById("recordButton");
+const addTypedButton = document.getElementById("addTypedButton");
+const typedInput = document.getElementById("typedInput");
+const dayTabs = document.getElementById("dayTabs");
+const entriesPanel = document.getElementById("entriesPanel");
+const totalsPanel = document.getElementById("totalsPanel");
+const totalsRange = document.getElementById("totalsRange");
+const rawViewButton = document.getElementById("rawViewButton");
+const totalsViewButton = document.getElementById("totalsViewButton");
+const trendsViewButton = document.getElementById("trendsViewButton");
+const rawViewPanel = document.getElementById("rawViewPanel");
+const totalsViewPanel = document.getElementById("totalsViewPanel");
+const trendsViewPanel = document.getElementById("trendsViewPanel");
+const trendSummaryCards = document.getElementById("trendSummaryCards");
+const trendTimeComparison = document.getElementById("trendTimeComparison");
+const trendRepsComparison = document.getElementById("trendRepsComparison");
+const trendStreak = document.getElementById("trendStreak");
+const timeChart = document.getElementById("timeChart");
+const repsChart = document.getElementById("repsChart");
+const topTimeDays = document.getElementById("topTimeDays");
+const topRepDays = document.getElementById("topRepDays");
+const entryRowTemplate = document.getElementById("entryRowTemplate");
+const totalRowTemplate = document.getElementById("totalRowTemplate");
+const entryRowTemplate = document.getElementById("entryRowTemplate");
+const liveTranscript = document.getElementById("liveTranscript");
+const voiceSupportNotice = document.getElementById("voiceSupportNotice");
 
-var editDialog = document.getElementById("editDialog");
-var editForm = document.getElementById("editForm");
-var editActivity = document.getElementById("editActivity");
-var editAmount = document.getElementById("editAmount");
-var editUnit = document.getElementById("editUnit");
-var cancelEdit = document.getElementById("cancelEdit");
+const editDialog = document.getElementById("editDialog");
+const editForm = document.getElementById("editForm");
+const editActivity = document.getElementById("editActivity");
+const editAmount = document.getElementById("editAmount");
+const editUnit = document.getElementById("editUnit");
+const cancelEdit = document.getElementById("cancelEdit");
 
-var entries = loadEntries();
-var selectedDay = getTodayKey();
-var selectedView = "raw";
-var editingEntryId = null;
-var recognition = null;
-var isRecording = false;
+let entries = loadEntries();
+let selectedDay = getTodayKey();
+let selectedView = "raw";
+let editingEntryId = null;
+let recognition = null;
+let isRecording = false;
 
-var workoutCatalog = Array.isArray(window.WORKOUT_CATALOG) ? window.WORKOUT_CATALOG : [];
-var activityAliasMap = buildActivityAliasMap(workoutCatalog);
+const workoutCatalog = Array.isArray(window.WORKOUT_CATALOG) ? window.WORKOUT_CATALOG : [];
+const activityAliasMap = buildActivityAliasMap(workoutCatalog);
 
 initializeVoiceRecognition();
 render();
@@ -185,6 +186,10 @@ function parseWorkoutText(text) {
     .replace(/\band\b/g, ",")
     .replace(/\bi did\b/g, "")
     .replace(/[–—]/g, "-")
+  const normalized = text
+    .toLowerCase()
+    .replace(/\band\b/g, ",")
+    .replace(/\bi did\b/g, "")
     .replace(/\ba\b/g, "1");
 
   const chunks = normalized
@@ -220,11 +225,26 @@ function parseWorkoutText(text) {
 
     const canonicalActivity = canonicalizeActivity(activity);
     if (!canonicalActivity) {
+    const match = chunk.match(/(\d+(?:\.\d+)?)\s*(minute|minutes|second|seconds|hour|hours|rep|reps)?\s+(.+)/);
+
+    if (!match) {
+      continue;
+    }
+
+    const amount = Number(match[1]);
+    const rawUnit = match[2] || "reps";
+    const activity = match[3]
+      .replace(/\bfor\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!activity) {
       continue;
     }
 
     parsed.push({
       activity: canonicalActivity,
+      activity,
       amount,
       unit: normalizeUnit(rawUnit),
       timestamp: new Date().toISOString(),
@@ -336,6 +356,7 @@ function addParsedEntries(parsedEntries) {
   const entriesToAdd = parsedEntries.map((entry) => ({
     ...entry,
     id: createEntryId(),
+    id: crypto.randomUUID(),
   }));
 
   entries = [...entries, ...entriesToAdd];
@@ -362,6 +383,8 @@ function renderViewToggle() {
   rawViewPanel.hidden = !showingRaw;
   totalsViewPanel.hidden = !showingTotals;
   trendsViewPanel.hidden = !showingTrends;
+  renderDayTabs();
+  renderEntriesForSelectedDay();
 }
 
 function renderDayTabs() {
@@ -442,6 +465,16 @@ function renderTotals() {
         activity: entry.activity,
         unit: normalized.unit,
         amount: normalized.amount,
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const existing = totalsMap.get(key);
+
+    if (existing) {
+      existing.amount += Number(entry.amount);
+    } else {
+      totalsMap.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
       });
     }
   }
@@ -526,6 +559,15 @@ function summarizeTodayPerExercise(allEntries, day) {
         activity: entry.activity,
         unit: normalized.unit,
         amount: normalized.amount,
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const current = map.get(key);
+    if (current) {
+      current.amount += Number(entry.amount);
+    } else {
+      map.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
       });
     }
   }
@@ -662,6 +704,13 @@ function createEntryId() {
   if (cryptoObj && typeof cryptoObj.getRandomValues === "function") {
     const randomBytes = new Uint32Array(2);
     cryptoObj.getRandomValues(randomBytes);
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  if (globalThis.crypto?.getRandomValues) {
+    const randomBytes = new Uint32Array(2);
+    globalThis.crypto.getRandomValues(randomBytes);
     return `fallback-${Date.now().toString(36)}-${randomBytes[0].toString(36)}${randomBytes[1].toString(36)}`;
   }
 
@@ -775,6 +824,17 @@ function formatDay(day) {
   return parseDayKey(day).toLocaleDateString([], {
     weekday: "short",
     month: "short",
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDay(day) {
+  return new Date(day).toLocaleDateString([], {
+    weekday: "short",
+    month: "long",
     day: "numeric",
   });
 }
