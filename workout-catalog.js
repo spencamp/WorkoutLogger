@@ -49,4 +49,9 @@ window.WORKOUT_CATALOG = [
     type: "stretch",
     aliases: ["ankle stretch", "ankle dorsiflexion"],
   },
+  {
+    name: "plank",
+    type: "exercise",
+    aliases: ["plank hold"],
+  },
 ];
