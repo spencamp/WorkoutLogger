@@ -23,6 +23,7 @@ const topTimeDays = document.getElementById("topTimeDays");
 const topRepDays = document.getElementById("topRepDays");
 const entryRowTemplate = document.getElementById("entryRowTemplate");
 const totalRowTemplate = document.getElementById("totalRowTemplate");
+const entryRowTemplate = document.getElementById("entryRowTemplate");
 const liveTranscript = document.getElementById("liveTranscript");
 const voiceSupportNotice = document.getElementById("voiceSupportNotice");
 
@@ -176,6 +177,10 @@ function parseWorkoutText(text) {
     .replace(/\band\b/g, ",")
     .replace(/\bi did\b/g, "")
     .replace(/[–—]/g, "-")
+  const normalized = text
+    .toLowerCase()
+    .replace(/\band\b/g, ",")
+    .replace(/\bi did\b/g, "")
     .replace(/\ba\b/g, "1");
 
   const chunks = normalized
@@ -211,11 +216,26 @@ function parseWorkoutText(text) {
 
     const canonicalActivity = canonicalizeActivity(activity);
     if (!canonicalActivity) {
+    const match = chunk.match(/(\d+(?:\.\d+)?)\s*(minute|minutes|second|seconds|hour|hours|rep|reps)?\s+(.+)/);
+
+    if (!match) {
+      continue;
+    }
+
+    const amount = Number(match[1]);
+    const rawUnit = match[2] || "reps";
+    const activity = match[3]
+      .replace(/\bfor\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!activity) {
       continue;
     }
 
     parsed.push({
       activity: canonicalActivity,
+      activity,
       amount,
       unit: normalizeUnit(rawUnit),
       timestamp: new Date().toISOString(),
@@ -223,79 +243,6 @@ function parseWorkoutText(text) {
   }
 
   return parsed;
-}
-
-function replaceNumberWords(text) {
-  const wordToNumber = {
-    zero: "0",
-    one: "1",
-    two: "2",
-    three: "3",
-    four: "4",
-    five: "5",
-    six: "6",
-    seven: "7",
-    eight: "8",
-    nine: "9",
-    ten: "10",
-    eleven: "11",
-    twelve: "12",
-    thirteen: "13",
-    fourteen: "14",
-    fifteen: "15",
-    sixteen: "16",
-    seventeen: "17",
-    eighteen: "18",
-    nineteen: "19",
-    twenty: "20",
-    thirty: "30",
-    forty: "40",
-    fifty: "50",
-    sixty: "60",
-  };
-
-  let output = text;
-  for (const [word, number] of Object.entries(wordToNumber)) {
-    const regex = new RegExp(`\\b${word}\\b`, "gi");
-    output = output.replace(regex, number);
-  }
-
-  return output;
-}
-
-function canonicalizeActivity(activity) {
-  const cleaned = activity
-    .replace(/\bfor\b/g, "")
-    .replace(/[^a-z0-9\s-]/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!cleaned) {
-    return "";
-  }
-
-  const aliases = [
-    [/^dead[- ]?hang$/, "dead hang"],
-    [/^hang$/, "dead hang"],
-    [/^couch stretch$/, "couch stretch"],
-    [/^hip flexor stretch$/, "couch stretch"],
-    [/^deep squat$/, "deep squat hold"],
-    [/^deep squat hold$/, "deep squat hold"],
-    [/^dep squat$/, "deep squat hold"],
-    [/^hamstring stretch$/, "hamstring stretch"],
-    [/^calf stretch$/, "calf stretch"],
-    [/^shoulder stretch$/, "shoulder stretch"],
-    [/^thoracic rotation$/, "thoracic rotation"],
-    [/^ankle mobility$/, "ankle mobility"],
-  ];
-
-  for (const [pattern, canonical] of aliases) {
-    if (pattern.test(cleaned)) {
-      return canonical;
-    }
-  }
-
-  return cleaned;
 }
 
 function normalizeUnit(unit) {
@@ -314,7 +261,7 @@ function normalizeUnit(unit) {
 function addParsedEntries(parsedEntries) {
   const entriesToAdd = parsedEntries.map((entry) => ({
     ...entry,
-    id: createEntryId(),
+    id: crypto.randomUUID(),
   }));
 
   entries = [...entries, ...entriesToAdd];
@@ -341,6 +288,8 @@ function renderViewToggle() {
   rawViewPanel.hidden = !showingRaw;
   totalsViewPanel.hidden = !showingTotals;
   trendsViewPanel.hidden = !showingTrends;
+  renderDayTabs();
+  renderEntriesForSelectedDay();
 }
 
 function renderDayTabs() {
@@ -421,6 +370,16 @@ function renderTotals() {
         activity: entry.activity,
         unit: normalized.unit,
         amount: normalized.amount,
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const existing = totalsMap.get(key);
+
+    if (existing) {
+      existing.amount += Number(entry.amount);
+    } else {
+      totalsMap.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
       });
     }
   }
@@ -505,6 +464,15 @@ function summarizeTodayPerExercise(allEntries, day) {
         activity: entry.activity,
         unit: normalized.unit,
         amount: normalized.amount,
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const current = map.get(key);
+    if (current) {
+      current.amount += Number(entry.amount);
+    } else {
+      map.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
       });
     }
   }
@@ -752,6 +720,17 @@ function formatDay(day) {
   return parseDayKey(day).toLocaleDateString([], {
     weekday: "short",
     month: "short",
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDay(day) {
+  return new Date(day).toLocaleDateString([], {
+    weekday: "short",
+    month: "long",
     day: "numeric",
   });
 }

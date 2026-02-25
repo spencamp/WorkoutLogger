@@ -6,7 +6,6 @@ A beginner-friendly web app that lets you log workouts with voice or typing.
 
 - Press a button and talk naturally (when browser supports speech recognition).
 - Parse multiple entries from one phrase (`"10 squats and 1 minute dead hang"`).
-- Handle more natural phrasing like hyphenated time (`"60-second couch stretch"`) and normalize common aliases (`"dead-hang"` -> `dead hang`).
 - Keep all logs in `localStorage` (on-device).
 - View a **Raw Daily Log** by day tabs.
 - View a **Totals** tab grouped by exercise + unit.
@@ -17,6 +16,7 @@ A beginner-friendly web app that lets you log workouts with voice or typing.
   - last 14-day charts (time and reps),
   - most active days lists (time and reps),
   - current streak.
+- Group workouts by day with tappable day tabs.
 - Edit or delete entries.
 - Typed logging works offline.
 
@@ -65,6 +65,8 @@ Then open:
 4. Open **Totals** for totals by exercise over your selected range.
 5. Open **Trends** to check consistency and progress at a glance.
 6. Use **Edit** or **Delete** for corrections.
+3. Open the day tab to review entries.
+4. Use **Edit** or **Delete** for corrections.
 
 ## Suggested next upgrades
 
