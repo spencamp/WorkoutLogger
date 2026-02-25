@@ -23,6 +23,7 @@ const topTimeDays = document.getElementById("topTimeDays");
 const topRepDays = document.getElementById("topRepDays");
 const entryRowTemplate = document.getElementById("entryRowTemplate");
 const totalRowTemplate = document.getElementById("totalRowTemplate");
+const entryRowTemplate = document.getElementById("entryRowTemplate");
 const liveTranscript = document.getElementById("liveTranscript");
 const voiceSupportNotice = document.getElementById("voiceSupportNotice");
 
@@ -256,6 +257,8 @@ function renderViewToggle() {
   rawViewPanel.hidden = !showingRaw;
   totalsViewPanel.hidden = !showingTotals;
   trendsViewPanel.hidden = !showingTrends;
+  renderDayTabs();
+  renderEntriesForSelectedDay();
 }
 
 function renderDayTabs() {
@@ -636,6 +639,17 @@ function formatDay(day) {
   return parseDayKey(day).toLocaleDateString([], {
     weekday: "short",
     month: "short",
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDay(day) {
+  return new Date(day).toLocaleDateString([], {
+    weekday: "short",
+    month: "long",
     day: "numeric",
   });
 }
