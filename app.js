@@ -29,6 +29,7 @@ const topTimeDays = document.getElementById("topTimeDays");
 const topRepDays = document.getElementById("topRepDays");
 const entryRowTemplate = document.getElementById("entryRowTemplate");
 const totalRowTemplate = document.getElementById("totalRowTemplate");
+const entryRowTemplate = document.getElementById("entryRowTemplate");
 const liveTranscript = document.getElementById("liveTranscript");
 const voiceSupportNotice = document.getElementById("voiceSupportNotice");
 
@@ -185,6 +186,10 @@ function parseWorkoutText(text) {
     .replace(/\band\b/g, ",")
     .replace(/\bi did\b/g, "")
     .replace(/[–—]/g, "-")
+  const normalized = text
+    .toLowerCase()
+    .replace(/\band\b/g, ",")
+    .replace(/\bi did\b/g, "")
     .replace(/\ba\b/g, "1");
 
   const chunks = normalized
@@ -220,11 +225,26 @@ function parseWorkoutText(text) {
 
     const canonicalActivity = canonicalizeActivity(activity);
     if (!canonicalActivity) {
+    const match = chunk.match(/(\d+(?:\.\d+)?)\s*(minute|minutes|second|seconds|hour|hours|rep|reps)?\s+(.+)/);
+
+    if (!match) {
+      continue;
+    }
+
+    const amount = Number(match[1]);
+    const rawUnit = match[2] || "reps";
+    const activity = match[3]
+      .replace(/\bfor\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!activity) {
       continue;
     }
 
     parsed.push({
       activity: canonicalActivity,
+      activity,
       amount,
       unit: normalizeUnit(rawUnit),
       timestamp: new Date().toISOString(),
@@ -336,6 +356,7 @@ function addParsedEntries(parsedEntries) {
   const entriesToAdd = parsedEntries.map((entry) => ({
     ...entry,
     id: createEntryId(),
+    id: crypto.randomUUID(),
   }));
 
   entries = [...entries, ...entriesToAdd];
@@ -362,6 +383,8 @@ function renderViewToggle() {
   rawViewPanel.hidden = !showingRaw;
   totalsViewPanel.hidden = !showingTotals;
   trendsViewPanel.hidden = !showingTrends;
+  renderDayTabs();
+  renderEntriesForSelectedDay();
 }
 
 function renderDayTabs() {
@@ -442,6 +465,16 @@ function renderTotals() {
         activity: entry.activity,
         unit: normalized.unit,
         amount: normalized.amount,
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const existing = totalsMap.get(key);
+
+    if (existing) {
+      existing.amount += Number(entry.amount);
+    } else {
+      totalsMap.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
       });
     }
   }
@@ -526,6 +559,15 @@ function summarizeTodayPerExercise(allEntries, day) {
         activity: entry.activity,
         unit: normalized.unit,
         amount: normalized.amount,
+    const key = `${entry.activity.toLowerCase()}|${entry.unit}`;
+    const current = map.get(key);
+    if (current) {
+      current.amount += Number(entry.amount);
+    } else {
+      map.set(key, {
+        activity: entry.activity,
+        unit: entry.unit,
+        amount: Number(entry.amount),
       });
     }
   }
@@ -662,6 +704,13 @@ function createEntryId() {
   if (cryptoObj && typeof cryptoObj.getRandomValues === "function") {
     const randomBytes = new Uint32Array(2);
     cryptoObj.getRandomValues(randomBytes);
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  if (globalThis.crypto?.getRandomValues) {
+    const randomBytes = new Uint32Array(2);
+    globalThis.crypto.getRandomValues(randomBytes);
     return `fallback-${Date.now().toString(36)}-${randomBytes[0].toString(36)}${randomBytes[1].toString(36)}`;
   }
 
@@ -775,6 +824,17 @@ function formatDay(day) {
   return parseDayKey(day).toLocaleDateString([], {
     weekday: "short",
     month: "short",
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDay(day) {
+  return new Date(day).toLocaleDateString([], {
+    weekday: "short",
+    month: "long",
     day: "numeric",
   });
 }
