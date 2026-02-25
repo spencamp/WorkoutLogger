@@ -54,4 +54,8 @@ window.WORKOUT_CATALOG = [
     type: "exercise",
     aliases: ["plank hold"],
   },
+  {
+    name: "cat cow",
+    type: "stretch",
+    aliases: ["catcow", "cat-cow"]
 ];
